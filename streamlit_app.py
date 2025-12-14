@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import io
 import base64
 from PIL import Image
+from rag_system import RAGSystem
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -151,13 +152,38 @@ Analyse l'image fournie et répond à la question en te basant uniquement sur le
         
         # Si on a du texte de document
         elif document_text:
-            prompt = f"""Voici le contenu d'un document :
+            # Utiliser RAG si disponible, sinon utiliser tout le texte
+            if hasattr(st.session_state, 'rag_system') and st.session_state.get('use_rag', True):
+                rag_system = st.session_state['rag_system']
+                context = rag_system.get_context_for_question(question, top_k=3)
+                
+                if context:
+                    prompt = f"""Voici les extraits pertinents d'un document trouvés par recherche sémantique :
+
+{context}
+
+Question: {question}
+
+Répond à la question en te basant uniquement sur les extraits du document fournis ci-dessus. Si la réponse n'est pas dans ces extraits, dis le clairement et dis "je ne sais pas". Réponds dans la même langue que la question de l'utilisateur."""
+                else:
+                    # Fallback si RAG ne trouve rien
+                    prompt = f"""Voici le contenu d'un document :
 
 {document_text}
 
 Question: {question}
 
 Répond à la question en te basant uniquement sur le contenu du document fournis. Si la réponse n'est pas dans le document, dis le clairement et dis "je ne sais pas". Réponds dans la même langue que la question de l'utilisateur."""
+            else:
+                # Mode sans RAG : envoyer tout le document
+                prompt = f"""Voici le contenu d'un document :
+
+{document_text}
+
+Question: {question}
+
+Répond à la question en te basant uniquement sur le contenu du document fournis. Si la réponse n'est pas dans le document, dis le clairement et dis "je ne sais pas". Réponds dans la même langue que la question de l'utilisateur."""
+            
             user_content.append({"type": "text", "text": prompt})
         
         messages.append({
@@ -214,6 +240,17 @@ with st.sidebar:
     # Mettre à jour le modèle dans session_state
     st.session_state['selected_model'] = selected_model
     
+    # Option pour activer/désactiver RAG
+    if 'use_rag' not in st.session_state:
+        st.session_state['use_rag'] = True
+    
+    use_rag = st.checkbox(
+        "🔍 Utiliser RAG (Recherche intelligente)",
+        value=st.session_state['use_rag'],
+        help="Active la recherche sémantique dans les documents. Seules les parties pertinentes seront envoyées à ChatGPT."
+    )
+    st.session_state['use_rag'] = use_rag
+    
     st.markdown("---")
     
     st.header("📤 Upload Fichier")
@@ -269,6 +306,21 @@ if uploaded_file is not None or uploaded_image is not None:
                     st.session_state['document_text'] = document_text
                     st.session_state['current_file'] = uploaded_file.name
                     st.session_state['current_image'] = None  # Réinitialiser l'image
+                    
+                    # Construire l'index RAG si activé
+                    if st.session_state.get('use_rag', True):
+                        with st.spinner("🔍 Construction de l'index RAG (cela peut prendre quelques secondes)..."):
+                            try:
+                                rag_system = RAGSystem(api_key)
+                                rag_system.build_index(document_text)
+                                st.session_state['rag_system'] = rag_system
+                                st.success(f"✅ Index RAG créé avec {len(rag_system.chunks)} chunks!")
+                            except Exception as e:
+                                st.warning(f"⚠️ Erreur lors de la création de l'index RAG: {str(e)}. Le mode sans RAG sera utilisé.")
+                                st.session_state['rag_system'] = None
+                    else:
+                        st.session_state['rag_system'] = None
+                    
                     st.success("✅ Contenu extrait avec succès!")
                 else:
                     st.error("❌ Impossible d'extraire le contenu du document.")
@@ -280,6 +332,13 @@ if uploaded_file is not None or uploaded_image is not None:
             st.text(preview_text)
             if len(st.session_state['document_text']) > 500:
                 st.caption(f"... ({len(st.session_state['document_text']) - 500} caractères supplémentaires)")
+            
+            # Afficher les infos RAG
+            if st.session_state.get('use_rag', True) and hasattr(st.session_state, 'rag_system') and st.session_state.get('rag_system'):
+                rag_system = st.session_state['rag_system']
+                st.info(f"🔍 RAG activé : {len(rag_system.chunks)} chunks créés pour la recherche sémantique")
+            elif not st.session_state.get('use_rag', True):
+                st.info("ℹ️ RAG désactivé : tout le document sera envoyé à ChatGPT")
     
     # Gérer les images
     if uploaded_image is not None:
@@ -356,7 +415,12 @@ if uploaded_file is not None or uploaded_image is not None:
                     model = "gpt-4o"
                     st.info("ℹ️ Le modèle a été automatiquement changé en gpt-4o pour l'analyse d'images.")
                 
-                with st.spinner(f"🤔 ChatGPT ({model}) analyse..."):
+                # Afficher l'info RAG si activé
+                rag_info = ""
+                if document_text and st.session_state.get('use_rag', True) and hasattr(st.session_state, 'rag_system') and st.session_state.get('rag_system'):
+                    rag_info = " (avec RAG)"
+                
+                with st.spinner(f"🤔 ChatGPT ({model}) analyse{rag_info}..."):
                     answer = ask_question(
                         question, 
                         document_text=document_text,
