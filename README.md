@@ -42,25 +42,6 @@ python --version
 python chatgpt_hello.py
 ```
 
-### Configuration de la clé API
-
-**Méthode 1 : Fichier .env (recommandé)**
-
-Créez un fichier `.env` à la racine du projet :
-
-```env
-OPENAI_API_KEY=votre-clé-api-ici
-```
-
-Le script chargera automatiquement la clé depuis ce fichier grâce à `python-dotenv`.
-
-**Méthode 2 : Variable d'environnement PowerShell**
-
-```powershell
-$env:OPENAI_API_KEY="votre-clé-api-ici"
-```
-
-**Obtenez votre clé API sur :** https://platform.openai.com/api-keys
 
 ## Application Streamlit - Document & Image Q&A
 
