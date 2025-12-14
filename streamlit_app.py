@@ -33,6 +33,7 @@ if not api_key:
 from main import (
     extract_text,
     count_pages,
+    estimate_tokens,
     image_to_base64,
     get_image_mime_type,
     ask_question
@@ -156,8 +157,12 @@ if uploaded_file is not None or uploaded_image is not None:
                         st.session_state['current_image'] = None  # Réinitialiser l'image
                         st.session_state['num_pages'] = num_pages
                         
-                        # Déterminer automatiquement si on utilise RAG (>= 80 pages)
-                        use_rag = num_pages >= 80
+                        # Estimer le nombre de tokens
+                        num_tokens = estimate_tokens(document_text)
+                        st.session_state['num_tokens'] = num_tokens
+                        
+                        # Déterminer automatiquement si on utilise RAG (>= 80000 tokens)
+                        use_rag = num_tokens >= 80000
                         st.session_state['use_rag'] = use_rag
                         
                         if use_rag:
@@ -166,14 +171,14 @@ if uploaded_file is not None or uploaded_image is not None:
                                     rag_system = RAGSystem(api_key)
                                     rag_system.build_index(document_text)
                                     st.session_state['rag_system'] = rag_system
-                                    st.success(f"✅ Index RAG créé avec {len(rag_system.chunks)} chunks! (Document: {num_pages} pages)")
+                                    st.success(f"✅ Index RAG créé avec {len(rag_system.chunks)} chunks! (Document: ~{num_tokens:,} tokens)")
                                 except Exception as e:
                                     st.warning(f"⚠️ Erreur lors de la création de l'index RAG: {str(e)}. Le mode sans RAG sera utilisé.")
                                     st.session_state['rag_system'] = None
                                     st.session_state['use_rag'] = False
                         else:
                             st.session_state['rag_system'] = None
-                            st.info(f"ℹ️ Document de {num_pages} pages : RAG désactivé (seuil: 80 pages)")
+                            st.info(f"ℹ️ Document de ~{num_tokens:,} tokens : RAG désactivé (seuil: 80 000 tokens)")
                         
                         st.success("✅ Contenu extrait avec succès!")
                     else:
@@ -191,12 +196,12 @@ if uploaded_file is not None or uploaded_image is not None:
                 st.caption(f"... ({len(st.session_state['document_text']) - 500} caractères supplémentaires)")
             
             # Afficher les infos RAG
-            num_pages = st.session_state.get('num_pages', 0)
+            num_tokens = st.session_state.get('num_tokens', 0)
             if st.session_state.get('use_rag', False) and hasattr(st.session_state, 'rag_system') and st.session_state.get('rag_system'):
                 rag_system = st.session_state['rag_system']
-                st.info(f"🔍 RAG activé automatiquement ({num_pages} pages ≥ 80) : {len(rag_system.chunks)} chunks créés pour la recherche sémantique")
+                st.info(f"🔍 RAG activé automatiquement (~{num_tokens:,} tokens ≥ 80 000) : {len(rag_system.chunks)} chunks créés pour la recherche sémantique")
             else:
-                st.info(f"ℹ️ RAG désactivé ({num_pages} pages < 80) : tout le document sera envoyé à ChatGPT")
+                st.info(f"ℹ️ RAG désactivé (~{num_tokens:,} tokens < 80 000) : tout le document sera envoyé à ChatGPT")
     
     # Gérer les images
     if uploaded_image is not None:

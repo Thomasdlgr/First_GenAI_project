@@ -19,6 +19,26 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 
 
+def estimate_tokens(text):
+    """
+    Estime le nombre de tokens dans un texte
+    
+    Args:
+        text: Texte à analyser
+        
+    Returns:
+        int: Nombre estimé de tokens
+    """
+    try:
+        # Essayer d'utiliser tiktoken pour une estimation précise
+        import tiktoken
+        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        return len(encoding.encode(text))
+    except ImportError:
+        # Fallback : approximation simple (environ 4 caractères = 1 token)
+        # Cette approximation est généralement assez précise pour le français/anglais
+        return len(text) // 4
+
 
 def describe_image_with_vision(image_base64):
     """
