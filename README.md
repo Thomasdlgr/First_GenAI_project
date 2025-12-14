@@ -46,13 +46,13 @@ python chatgpt_hello.py
 ## Application Streamlit - Document & Image Q&A
 
 L'application Streamlit permet de :
-- 📤 Uploader des documents (PDF, DOCX, TXT) **ou des images** (JPG, PNG)
-- 📖 Extraire automatiquement le contenu des documents
-- 🔍 **Système RAG (Retrieval-Augmented Generation)** : recherche sémantique intelligente dans les documents
-- 🖼️ Analyser les images avec ChatGPT Vision
-- 💬 Poser des questions sur le document ou l'image
-- 🤖 Obtenir des réponses de ChatGPT basées sur le contenu
-- ⚙️ Choisir le modèle ChatGPT (gpt-3.5-turbo, gpt-4, gpt-4o, etc.)
+-  Uploader des documents (PDF, DOCX, TXT) **ou des images** (JPG, PNG)
+-  Extraire automatiquement le contenu des documents
+-  **Système RAG (Retrieval-Augmented Generation)** : recherche sémantique intelligente dans les documents
+-  Analyser les images avec ChatGPT Vision
+-  Poser des questions sur le document ou l'image
+-  Obtenir des réponses de ChatGPT basées sur le contenu
+-  Choisir le modèle ChatGPT (gpt-3.5-turbo, gpt-4, gpt-4o, etc.)
 
 ### Formats supportés :
 **Documents :**
@@ -97,5 +97,6 @@ L'application utilise ChatGPT Vision pour analyser les images :
 - Si la réponse se trouve dans deux chunks différents, la recherche vectorielle peut sélectionner des chunks non pertinents. La question se trouve vectoriellement "au milieu" des deux bons chunks, mais peut être plus proche sémantiquement d'un autre chunk qui ne contient pas la réponse.
 - Inadapté pour les résumés de documents (nécessite une vue d'ensemble)
 
-### Phase 3 : Implémentation d'une solution pour le résumé de document
-(À venir)
+### Phase 3 : Implémentation d'une solution naïve pour les limites du RAG
+- Si un document est plus long que 80 pages alors on utilise l'algorithme de RAG sinon on charge au LLM l'entièreté du document.
+
