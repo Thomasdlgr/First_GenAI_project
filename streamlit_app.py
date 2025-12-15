@@ -161,8 +161,8 @@ if uploaded_file is not None or uploaded_image is not None:
                         num_tokens = estimate_tokens(document_text)
                         st.session_state['num_tokens'] = num_tokens
                         
-                        # Déterminer automatiquement si on utilise RAG (>= 80000 tokens)
-                        use_rag = num_tokens >= 80000
+                        # Déterminer automatiquement si on utilise RAG (>= 10 000 tokens)
+                        use_rag = num_tokens >= 10000
                         st.session_state['use_rag'] = use_rag
                         
                         if use_rag:
@@ -178,7 +178,7 @@ if uploaded_file is not None or uploaded_image is not None:
                                     st.session_state['use_rag'] = False
                         else:
                             st.session_state['rag_system'] = None
-                            st.info(f"ℹ️ Document de ~{num_tokens:,} tokens : RAG désactivé (seuil: 80 000 tokens)")
+                            st.info(f"ℹ️ Document de ~{num_tokens:,} tokens : RAG désactivé (seuil: 10 000 tokens)")
                         
                         st.success("✅ Contenu extrait avec succès!")
                     else:
@@ -199,9 +199,9 @@ if uploaded_file is not None or uploaded_image is not None:
             num_tokens = st.session_state.get('num_tokens', 0)
             if st.session_state.get('use_rag', False) and hasattr(st.session_state, 'rag_system') and st.session_state.get('rag_system'):
                 rag_system = st.session_state['rag_system']
-                st.info(f"🔍 RAG activé automatiquement (~{num_tokens:,} tokens ≥ 80 000) : {len(rag_system.chunks)} chunks créés pour la recherche sémantique")
+                st.info(f"🔍 RAG activé automatiquement (~{num_tokens:,} tokens ≥ 10 000) : {len(rag_system.chunks)} chunks créés pour la recherche sémantique")
             else:
-                st.info(f"ℹ️ RAG désactivé (~{num_tokens:,} tokens < 80 000) : tout le document sera envoyé à ChatGPT")
+                st.info(f"ℹ️ RAG désactivé (~{num_tokens:,} tokens < 10 000) : tout le document sera envoyé à ChatGPT")
     
     # Gérer les images
     if uploaded_image is not None:
